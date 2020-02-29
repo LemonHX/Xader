@@ -1,0 +1,108 @@
+// Created by intellij-pest on 2020-02-22
+// xader
+// Author: LemonHX
+// literal
+WHITESPACE = _{" "|"\t"|"\n"|"\r\n"}
+
+literal = @{num_l|bool_l}
+    int = @{ASCII_DIGIT~("_"|ASCII_DIGIT)*}
+    num_l = _{float_l|uint_l|int_l}
+        int_l = @{int | int ~ "i"}
+        uint_l = @{int ~"u"}
+        float_l = @{int~"f"~ ((^"e"|"E") ~ int)? |int ~ "." ~ int ~ "f"? ~ ((^"e"|"E") ~ int)?}
+    bool_l = @{"true"|"false"}
+
+ident = @{ASCII_ALPHA~(ASCII_ALPHA|ASCII_DIGIT)*}
+ty = @{ASCII_ALPHA_UPPER~(ASCII_ALPHA|ASCII_DIGIT)*|"()"}
+
+// atom = _{lit|ident|term}
+
+typed = {":"~ty}
+params = {"("~params_list~")"}
+    params_list = {ident~typed~(","~ident~typed)*}
+infix = _{ add | subtract | multiply | divide | power |leq | geq | eq | less | great| and | or }
+    add      = { "+" } //3
+    subtract = { "-" } //3
+    multiply = { "*" } //2
+    divide   = { "/" } //2
+    power    = { "^" } //1
+    leq = {"<="} //3
+    geq = {">="} //3
+    eq = {"=="} //3
+    less = {"<"} //3
+    great = {">"} //3
+    and = {"&&"} //3
+    or = {"||"} //3
+
+prefix = _{not|neg}
+    not = {"!"}
+    neg = {"-"}
+
+atom = {ident|literal|"("~term~")"|prefix ~ atom}
+	termb = _{atom ~ ((leq|geq|eq|less|great|and|or) ~ atom)*}
+    term3 = _{atom ~ ((add|subtract) ~ atom)*}
+    term2 = _{term3 ~((multiply|divide)~term3)*}
+    term = _{term2 ~(power~term2)*}
+
+// term = _{ident|literal} //TODO: finish this
+// infix_expr = {term ~ (calc_operation ~ term)*} //TODO: finish this
+// prefix_expr = {not ~ term|term ~ bool_operation ~ term}
+// bool_expr = {"("?~bool_infix_expr~")"?}
+// macro is not here
+// package
+
+use_list = {(ident~"::")+~(ident|"*")}
+using = {"use"~use_list}
+// basic grammar
+block = {"{"~exprs~";"?~"}"}
+exprs = _{expr~(";"~expr)*}
+expr = _{asin|if_expr|for_expr|while_expr|return_expr}
+    // asin
+    asin = {"let"~ident~typed?~"="~atom}
+    for_param = {""} //TODO: finish this
+    // if
+    if_expr = {"if"~"("?~(termb|atom)~")"?~block~("else"~block)?}
+    // for
+    for_expr = {"for"~for_param~block}
+    // while
+    while_expr = {"while"~atom~block}
+    // return
+    return_expr = {"return"~term}
+
+// enum
+enume = {access~"enum"~ty~enum_body}
+    enum_body = {"{"~vars~"}"} //TODO: finish this
+    vars = _{var~(","~var)*}
+    var = {ty~("("~ty_list~")")?}
+    ty_list = {ty~(","~ty)*}
+// structure
+structure = {access~"struct"~ty~struct_body}
+    struct_body = {"{"~fields~"}"} //TODO: finish this
+    fields = _{field~(","~field)*}
+    field = {access~ident~typed}
+// access
+access = {"pub"?}
+// function
+function_sig = {access~"fn"~ident~params~ret}
+function_sig_dispatched = {access~"fn"~ident~(_single_param|_multi_param|_explicit_param)~ret?}
+    _single_param = {"(.)"}
+    _multi_param = {"(..)"}
+    _explicit_param = {params}
+function = {function_sig~fn_body}
+    ret = {"->"~ty}
+    fn_body = {block} //TODO: finish this
+// func call
+func_call = {ident~(^"()"|args)}
+    args = {atom~(","~atom)*}
+dot_call = {ident~("."~func_call)*}
+
+// dot ident
+dot_ident =  {ident~("."~ident)*}
+
+// interface
+interface = {access~"interface"~ty~interface_body}
+    interface_body = {"{"~function_sig_dispatched+~"}"}
+// impl
+implement = {access~"impl"~ty~function}
+
+// primitives
