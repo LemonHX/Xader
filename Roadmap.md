@@ -1,0 +1,21 @@
+# 考虑编写的特性
+
+- [ ] 包管理
+  - [ ] 包上传
+  - [ ] 包下载
+  - [ ] 包文档
+  - [ ] 包入口需要的uniform信息
+- [ ] Interface
+  - [ ] 可以打猴子补丁的 impl
+  - [ ] 里面的函数默认带 this 指针
+- [ ] 函数
+  - [ ] 编译成 subroute 或 inline
+  - [ ] lambda 函数 (直接inline)
+- [ ] 生成 uniform 信息
+  - [ ] 根据引入的包的uniforms和自己的库的uniform
+  - [ ] 直接生成uniform到
+    - [ ] OpenGL
+    - [ ] Vulkan
+    - [ ] (可以考虑用户可以自己搞)
+- [ ] 后端
+  - [ ] 生成glsl
