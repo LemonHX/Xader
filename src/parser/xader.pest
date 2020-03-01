@@ -4,7 +4,7 @@
 // literal
 WHITESPACE = _{" "|"\t"|"\n"|"\r\n"}
 
-literal = @{num_l|bool_l}
+literal = _{num_l|bool_l}
     int = @{ASCII_DIGIT~("_"|ASCII_DIGIT)*}
     num_l = _{float_l|uint_l|int_l}
         int_l = @{int | int ~ "i"}
@@ -12,14 +12,13 @@ literal = @{num_l|bool_l}
         float_l = @{int~"f"~ ((^"e"|"E") ~ int)? |int ~ "." ~ int ~ "f"? ~ ((^"e"|"E") ~ int)?}
     bool_l = @{"true"|"false"}
 
-ident = @{ASCII_ALPHA~(ASCII_ALPHA|ASCII_DIGIT)*}
+ident = @{(ASCII_ALPHA|"_")~(ASCII_ALPHA|"_"|ASCII_DIGIT)*}
 ty = @{ASCII_ALPHA_UPPER~(ASCII_ALPHA|ASCII_DIGIT)*|"()"}
 
 // atom = _{lit|ident|term}
 
-typed = {":"~ty}
 params = {"("~params_list~")"}
-    params_list = {ident~typed~(","~ident~typed)*}
+    params_list = {ty~ident~(","~ty~ident)*}
 infix = _{ add | subtract | multiply | divide | power |leq | geq | eq | less | great| and | or }
     add      = { "+" } //3
     subtract = { "-" } //3
@@ -38,17 +37,17 @@ prefix = _{not|neg}
     not = {"!"}
     neg = {"-"}
 
-atom = {ident|literal|"("~term~")"|prefix ~ atom}
-	termb = _{atom ~ ((leq|geq|eq|less|great|and|or) ~ atom)*}
-    term3 = _{atom ~ ((add|subtract) ~ atom)*}
-    term2 = _{term3 ~((multiply|divide)~term3)*}
-    term = _{term2 ~(power~term2)*}
+// TODO: prec_climber
+primary = _{ident|literal|"("?~prefix_expr~")"?}
+atom = {"("?~infix_expr~")"?}
+    infix_expr = _{primary ~((leq|geq|eq|less|great|and|or|add|subtract|multiply|divide|power)~atom)*}
+    prefix_expr = {prefix~atom}
+// atom = {ident|literal|"("~term~")"|prefix ~ atom}
+// 	termb = _{atom ~ ((leq|geq|eq|less|great|and|or) ~ atom)*}
+//     term3 = _{atom ~ ((add|subtract) ~ atom)*}
+//     term2 = _{term3 ~((multiply|divide)~term3)*}
+//     term = _{term2 ~(power~term2)*}
 
-// term = _{ident|literal} //TODO: finish this
-// infix_expr = {term ~ (calc_operation ~ term)*} //TODO: finish this
-// prefix_expr = {not ~ term|term ~ bool_operation ~ term}
-// bool_expr = {"("?~bool_infix_expr~")"?}
-// macro is not here
 // package
 
 use_list = {(ident~"::")+~(ident|"*")}
@@ -58,32 +57,33 @@ block = {"{"~exprs~";"?~"}"}
 exprs = _{expr~(";"~expr)*}
 expr = _{asin|if_expr|for_expr|while_expr|return_expr}
     // asin
-    asin = {"let"~ident~typed?~"="~atom}
+    asin = {ty~ident~"="~atom}
     for_param = {""} //TODO: finish this
     // if
-    if_expr = {"if"~"("?~(termb|atom)~")"?~block~("else"~block)?}
+    if_expr = {"if"~"("?~atom~")"?~block~("else"~block)?}
     // for
     for_expr = {"for"~for_param~block}
     // while
     while_expr = {"while"~atom~block}
     // return
-    return_expr = {"return"~term}
+    return_expr = {"return"~atom}
 
 // enum
 enume = {access~"enum"~ty~enum_body}
-    enum_body = {"{"~vars~"}"} //TODO: finish this
-    vars = _{var~(","~var)*}
-    var = {ty~("("~ty_list~")")?}
+    enum_body = {"{"~variants~";"?~"}"} //TODO: finish this
+    variants = _{variant~(";"~variant)*}
+    variant = {ty~("("~ty_list~")")?}
     ty_list = {ty~(","~ty)*}
 // structure
 structure = {access~"struct"~ty~struct_body}
-    struct_body = {"{"~fields~"}"} //TODO: finish this
-    fields = _{field~(","~field)*}
-    field = {access~ident~typed}
+    struct_body = {"{"~fields~";"?~"}"} //TODO: finish this
+    fields = _{field~(";"~field)*}
+    field = {access~ty~ident}
 // access
 access = {"pub"?}
+route = {"@in"}
 // function
-function_sig = {access~"fn"~ident~params~ret}
+function_sig = {access~route~"fn"~ident~params~ret}
 function_sig_dispatched = {access~"fn"~ident~(_single_param|_multi_param|_explicit_param)~ret?}
     _single_param = {"(.)"}
     _multi_param = {"(..)"}
@@ -101,7 +101,7 @@ dot_ident =  {ident~("."~ident)*}
 
 // interface
 interface = {access~"interface"~ty~interface_body}
-    interface_body = {"{"~function_sig_dispatched+~"}"}
+    interface_body = {"{"~function_sig_dispatched+~";"?~"}"}
 // impl
 implement = {access~"impl"~ty~function}
 
