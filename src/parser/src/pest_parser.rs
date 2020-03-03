@@ -19,16 +19,23 @@ pub enum BaseExpr {
     ConstantBool(bool),
     ConstantInt{raw: String, unsigned: bool},
     ConstantFloat(String),
-    ExprNope
-}
-
-fn walk_literal(body: RuleList) {
-
+    ExprNope //TODO Whenever there's a ExprNope means the AST generator fails, a report should be filed
 }
 
 fn walk_primary_value(body: RuleList) -> BaseExpr {
     match body[0].as_rule() {
-        _ => BaseExpr::Ident(body[0].as_str().to_string()),
+        Rule::int_l => BaseExpr::ConstantInt {
+            raw: body[0].as_str().to_string(),
+            unsigned: false
+        },
+        Rule::uint_l => BaseExpr::ConstantInt {
+            raw: body[0].as_str().to_string(),
+            unsigned: true
+        },
+        Rule::float_l => BaseExpr::ConstantFloat(body[0].as_str().to_string()),
+        Rule::bool_l => BaseExpr::ConstantBool(body[0].as_str().eq("true")), // is this strict enough ?
+        Rule::ident => BaseExpr::Ident(body[0].as_str().to_string()),
+        _ => ExprNope
     }
 }
 
