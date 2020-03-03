@@ -37,11 +37,18 @@ prefix = _{not|neg}
     not = {"!"}
     neg = {"-"}
 
-// TODO: prec_climber
-primary = _{ident|literal|"("?~prefix_expr~")"?}
-atom = {"("?~infix_expr~")"?}
-    infix_expr = _{primary ~((leq|geq|eq|less|great|and|or|add|subtract|multiply|divide|power)~atom)*}
-    prefix_expr = {prefix~atom}
+primary_value = {ident|literal}
+
+// The parser file has been slightly modified to cope with prec climber
+primary_raw = {primary_value|prefix_expr}
+
+primary_bracketed = _{"(" ~ primary_raw ~ ")" | "(" ~ atom ~ ")"}
+
+atom_inner = _{"(" ~ atom ~ ")" | atom}
+
+atom = {infix_expr}
+    infix_expr = _{(primary_bracketed | primary_raw) ~ (infix ~ (primary_bracketed | primary_raw)) *}
+    prefix_expr = {prefix~atom_inner}
 // atom = {ident|literal|"("~term~")"|prefix ~ atom}
 // 	termb = _{atom ~ ((leq|geq|eq|less|great|and|or) ~ atom)*}
 //     term3 = _{atom ~ ((add|subtract) ~ atom)*}
